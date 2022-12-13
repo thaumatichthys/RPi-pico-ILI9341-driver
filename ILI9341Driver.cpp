@@ -1,6 +1,7 @@
 #include "ILI9341Driver.hpp"
 
 
+// I should probably add a setter for all these values
 uint16_t ILI9341::pixel_colour;
 uint8_t ILI9341::miso = MISO;
 uint8_t ILI9341::cs = CS;
@@ -8,9 +9,7 @@ uint8_t ILI9341::sclk = SCLK;
 uint8_t ILI9341::mosi = MOSI;
 uint8_t ILI9341::tft_rst = TFT_RST;
 uint8_t ILI9341::tft_dc = TFT_DC;
-
 spi_inst_t* ILI9341::spi_port = spi0;
-
 uint ILI9341::dma_chan;
 dma_channel_config ILI9341::dma_cfg;
 
@@ -20,7 +19,7 @@ void ILI9341::dma_finished_handler() {
     volatile uint8_t dummy = 0;
     for (uint32_t i = 0; i < (2000 * 1000000) / SPI_BITRATE; i++) { dummy = 123; } // delay a little bit since the IRQ triggers a bit early
     gpio_put(ILI9341::cs, 1);
-    spi_set_format(ILI9341::spi_port, 8, (spi_cpol_t) 0, (spi_cpha_t) 0, SPI_MSB_FIRST);
+    spi_set_format(ILI9341::spi_port, 8, (spi_cpol_t) 0, (spi_cpha_t) 0, SPI_MSB_FIRST); // set the SPI back to 8 bit mode
 }
 
 void ILI9341::Write16(uint16_t value) {
@@ -42,7 +41,7 @@ void ILI9341::InitDMA() {
 
 void ILI9341::DMAWrite16(uint16_t* data, uint32_t n, bool increment) {
     dma_channel_wait_for_finish_blocking(ILI9341::dma_chan);
-    spi_set_format(ILI9341::spi_port, 16, (spi_cpol_t) 0, (spi_cpha_t) 0, SPI_MSB_FIRST);
+    spi_set_format(ILI9341::spi_port, 16, (spi_cpol_t) 0, (spi_cpha_t) 0, SPI_MSB_FIRST); // set the hardware SPI unit to 16 bit mode
     channel_config_set_read_increment(&ILI9341::dma_cfg, increment);
     dma_channel_configure (
         ILI9341::dma_chan,
