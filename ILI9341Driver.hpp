@@ -1,3 +1,4 @@
+#include "stdio.h"
 #include "pico/stdlib.h"
 #include "hardware/spi.h"
 #include "hardware/dma.h"
@@ -7,13 +8,27 @@
 
 // default values
 #define MISO    16
-#define CS      15
+#define TFT_CS  15 // CS for the display
+#define XPT_CS  22 // CS for the touch controller
 #define SCLK    18
 #define MOSI    19
 #define TFT_RST 20
 #define TFT_DC  21
+#define TFT_BITRATE 40000000   // adjust to your needs
+#define XPT_BITRATE 1000000    // the touch controller doesn't like 40MHz baud :/
 #define SPI_PORT spi0
-#define SPI_BITRATE 40000000 // adjust to your needs
+
+/*
+    Methods of operation
+    for ILI9341:
+        Startup:
+            Send all the required commands and parameters for startup.
+        Writing to the display:
+            Send the column and row address select commands (8 bits each), and send the bounds as parameters (16 bits for each number).
+            Send the memory write command (8 bits), and send the data as parameters (16 bits per pixel).
+    
+
+*/
 
 // these were obtained from here https://github.com/adafruit/Adafruit_ILI9341
 const uint8_t startup_cmds[] = {
@@ -46,11 +61,15 @@ class ILI9341 {
     const uint16_t dx = 320;
     const uint16_t dy = 240;
 
+    static uint32_t tft_baudrate;
+    static uint32_t xpt_baudrate;
+
     // this needs to be here since local values get deleted after the function returns, so the DMA can't read those
     static uint16_t pixel_colour; 
 
     static uint8_t miso;
-    static uint8_t cs;
+    static uint8_t tft_cs;
+    static uint8_t xpt_cs;
     static uint8_t sclk;
     static uint8_t mosi;
     static uint8_t tft_rst;
@@ -66,4 +85,5 @@ class ILI9341 {
     void Init();
     void FillArea(uint16_t xs, uint16_t xe, uint16_t ys, uint16_t ye, uint8_t r, uint8_t g, uint8_t b);
     void WriteImage(uint16_t* img);
+    bool ReadTouch(uint8_t* x, uint8_t* y);
 };
