@@ -18,9 +18,9 @@ int main() {
 
     while(1) {
         gpio_put(25, 1);
-        sleep_ms(200);
+        //sleep_ms(20);
         gpio_put(25, 0);
-        sleep_ms(200);
+        sleep_ms(1);
         uint8_t dummy;
         dp.ReadTouch(&dummy, &dummy);
         //printf("kekw\n");

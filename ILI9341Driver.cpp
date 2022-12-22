@@ -160,26 +160,42 @@ void ILI9341::WriteImage(uint16_t* img) {
 }
 
 bool ILI9341::ReadTouch(uint8_t* x, uint8_t* y) { // this isnt finished
+    dma_channel_wait_for_finish_blocking(this->dma_chan);
     spi_set_baudrate(ILI9341::spi_port, ILI9341::xpt_baudrate);
     gpio_put(ILI9341::xpt_cs, 0);
     //                             1XXX0001  ->  Start | 12 bit | differential | power down between conversions, IRQ disabled
     const uint8_t cmd_template = 0b10000001;
+    uint16_t z1 = 0;
+    uint16_t z2 = 0;
+    uint8_t rbuf[2];
+    const uint8_t z1_control_byte = cmd_template | (3U << 4);
+    spi_write_blocking(ILI9341::spi_port, &z1_control_byte, 1); // writes the control byte
+    spi_read_blocking(ILI9341::spi_port, 0, rbuf, 2);
+    z1 = (((uint16_t) rbuf[0] << 8) | rbuf[1]) >> 3;
+    const uint8_t z2_control_byte = cmd_template | (4U << 4);
+    spi_write_blocking(ILI9341::spi_port, &z2_control_byte, 1); // writes the control byte
+    spi_read_blocking(ILI9341::spi_port, 0, rbuf, 2);
+    z2 = (((uint16_t) rbuf[0] << 8) | rbuf[1]) >> 3;
+    int32_t z = z1 + 4095 - z2;
+    if (z < 200)
+        return false;
     uint16_t x_val = 0;
     uint16_t y_val = 0;
-    
-    uint8_t x_control_byte = cmd_template | (1U << 4);
+    const uint8_t x_control_byte = cmd_template | (1U << 4);
     spi_write_blocking(ILI9341::spi_port, &x_control_byte, 1); // writes the control byte
-    spi_read16_blocking(ILI9341::spi_port, 0, &x_val, 1);
-
-    uint8_t y_control_byte = cmd_template | (5U << 4);
+    spi_read_blocking(ILI9341::spi_port, 0, rbuf, 2);
+    x_val = (((uint16_t) rbuf[0] << 8) | rbuf[1]) >> 3;
+    const uint8_t y_control_byte = cmd_template | (5U << 4);
     spi_write_blocking(ILI9341::spi_port, &y_control_byte, 1); // writes the control byte
-    spi_read16_blocking(ILI9341::spi_port, 0, &y_val, 1);
-
-    // UNFINISHED
-
-    printf("Data: X: %d, y: %d\n", x_val, y_val);
-
+    spi_read_blocking(ILI9341::spi_port, 0, rbuf, 2);
+    y_val = (((uint16_t) rbuf[0] << 8) | rbuf[1]) >> 3;
     gpio_put(ILI9341::xpt_cs, 1);
     spi_set_baudrate(ILI9341::spi_port, ILI9341::tft_baudrate);
-    return false;
+
+    printf("Data: X: %d, y: %d\n", x_val, y_val);
+    int screenx = dx - x_val * this->dx / 4096;
+    int screeny = dy - y_val * this->dy / 4096;
+    int size = 2;
+    this->FillArea(screenx - size, screenx + size, screeny - size, screeny + size, 0, 0, 0);
+    return true;
 }

@@ -15,7 +15,7 @@
 #define TFT_RST 20
 #define TFT_DC  21
 #define TFT_BITRATE 40000000   // adjust to your needs
-#define XPT_BITRATE 1000000    // the touch controller doesn't like 40MHz baud :/
+#define XPT_BITRATE 100000    // the touch controller doesn't like 40MHz baud :/
 #define SPI_PORT spi0
 
 /*
